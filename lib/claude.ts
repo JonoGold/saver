@@ -6,28 +6,32 @@ import type { ShoppingResult } from "./search";
 const client = new Anthropic();
 
 export async function extractProductInfo(page: ScrapedPage): Promise<OriginalProduct> {
-  const prompt = `You are a product data extractor. Extract structured product information from this webpage content.
+  const prompt = `You are a product data extractor. Extract structured product information from this search result data about a product URL.
 
 URL: ${page.url}
 Title: ${page.title}
 Meta Description: ${page.metaDescription}
 
-JSON-LD Structured Data:
-${page.jsonLd || "(none)"}
-
-Page Text (excerpt):
+Search result snippets and data:
 ${page.text}
 
-Extract and return a JSON object with these exact fields:
+Instructions:
+- Extract the product name, brand, category, and description from the search data
+- For price: look carefully in the text for any price mentions (e.g. "£279", "$349", "299.99"). Use your knowledge of this product if needed — if you know the typical retail price for this exact product model, use it.
+- For currency: infer from the URL domain (.co.uk = GBP, .com = USD, .de = EUR) or price symbols
+- For retailer: infer from the URL domain (amazon.co.uk = Amazon, johnlewis.com = John Lewis, etc.)
+- For imageUrl: return null (we don't have direct page access)
+
+Return a JSON object with these exact fields:
 {
   "name": "full product name",
-  "price": number or null (numeric price, no currency symbols),
-  "currency": "GBP" or "USD" or "EUR" (best guess from context, default GBP),
+  "price": number or null (numeric price only, no symbols — use your best estimate if visible in data),
+  "currency": "GBP" or "USD" or "EUR",
   "brand": "brand/manufacturer name",
   "category": "product category (e.g. 'Bluetooth Headphones', 'Running Shoes', 'Coffee Maker')",
   "description": "1-2 sentence description of what this product is and its key features",
-  "imageUrl": "main product image URL or null",
-  "retailer": "retailer name (e.g. Amazon, John Lewis, ASOS)"
+  "imageUrl": null,
+  "retailer": "retailer name"
 }
 
 Return ONLY valid JSON, no explanation.`;
